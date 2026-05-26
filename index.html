@@ -113,7 +113,7 @@
       font-size: 14px;
     }
 
-    /* Notes Feed: Exclusively contains the Malayalam Notation script */
+    /* Notes Feed: Malayalam Notation script */
     .notes-feed {
       flex: 1;
       background: #1a1a1e;
@@ -311,7 +311,7 @@
       <button onclick="loadSong()">Load Song</button>
     </div>
     
-    <div class="status-tag" id="midiStatus">MIDI: Mobile Touch Active 📱</div>
+    <div class="status-tag" id="midiStatus">Audio: Active 🔊</div>
   </header>
 
   <div class="workspace">
@@ -326,17 +326,17 @@
         <div class="notes-list" id="notesList">
           
           <div class="note-row">
-            <div class="carnatic-notation">സ &nbsp; രി &nbsp; ഗ &nbsp; മ &nbsp; | &nbsp; പ &nbsp; ധ &nbsp; നി &nbsp; സമു</div>
+            <div class="carnatic-notation">സ &nbsp; രി &nbsp; ഗ &nbsp; മ &nbsp; | &nbsp; പ &nbsp; ധ &nbsp; നി &nbsp; സ</div>
             <span class="note-timestamp">00:02</span>
           </div>
           
           <div class="note-row">
-            <div class="carnatic-notation">മാാാ &nbsp; മാാാ &nbsp; | &nbsp; പ &nbsp; ധ &nbsp; നി &nbsp; സത</div>
+            <div class="carnatic-notation">മാാാ &nbsp; മാാാ &nbsp; | &nbsp; പ &nbsp; ധ &nbsp; നി &nbsp; സ</div>
             <span class="note-timestamp">00:06</span>
           </div>
 
           <div class="note-row">
-            <div class="carnatic-notation">രിിി &nbsp; ഗ &nbsp; മ &nbsp; | &nbsp; പപ &nbsp; ധധ &nbsp; നി</div>
+            <div class="carnatic-notation">രിിി &nbsp; ഗ &nbsp; മ &nbsp; | &nbsp; പ &nbsp; ധ &nbsp; നി &nbsp; സ</div>
             <span class="note-timestamp">00:11</span>
           </div>
           
@@ -382,7 +382,61 @@
   </div>
 
   <script>
-    // 1. YouTube Video Embedding system
+    // 1. Audio Engine Initialization (Web Audio API)
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new AudioContext();
+      }
+    }
+
+    // Precise frequency tuning values mapping notes to Hz
+    const noteFreqs = {
+      "C4": 261.63, "C#4": 277.18, "D4": 293.66, "D#4": 311.13, "E4": 329.63,
+      "F4": 349.23, "F#4": 369.99, "G4": 392.00, "G#4": 415.30, "A4": 440.00,
+      "A#4": 466.16, "B4": 493.88, "C5": 523.25, "C#5": 554.37, "D5": 587.33,
+      "D#5": 622.25, "E5": 659.25
+    };
+
+    // 2. Interactive Key Trigger & Synth Sound Generator
+    function playKey(note) {
+      initAudio();
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+
+      const freq = noteFreqs[note];
+      if (!freq) return;
+
+      // Create raw oscillator and sound volume envelope elements
+      const osc = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      
+      osc.type = 'triangle'; // Smooth tone structure suited for piano approximations
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      
+      // ADSR Volume Envelope configuration to simulate piano decay physics
+      gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.4, audioCtx.currentTime + 0.04); 
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8); 
+      
+      osc.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.8);
+
+      // Visual DOM Active CSS state feedback indicator triggering
+      const targetKey = document.querySelector(`[data-note="${note}"]`);
+      if(targetKey) {
+        targetKey.classList.add('active');
+        setTimeout(() => targetKey.classList.remove('active'), 150);
+      }
+    }
+
+    // 3. YouTube Embed System Loader
     function loadSong() {
       const urlInput = document.getElementById('youtubeUrl').value;
       const videoContainer = document.getElementById('videoContainer');
@@ -404,17 +458,7 @@
       }
     }
 
-    // 2. Interactive Key visual response triggers
-    function playKey(note) {
-      console.log("Key Triggered: " + note);
-      const targetKey = document.querySelector(`[data-note="${note}"]`);
-      if(targetKey) {
-        targetKey.classList.add('active');
-        setTimeout(() => targetKey.classList.remove('active'), 150);
-      }
-    }
-
-    // 3. Falling Canvas Loop Engine with note letters drawn inside
+    // 4. Waterfall Animation Canvas System
     const canvas = document.getElementById('visualizerCanvas');
     const ctx = canvas.getContext('2d');
     const speedSlider = document.getElementById('speedSlider');
@@ -426,7 +470,6 @@
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    // Added explicit 'label' fields to display notation symbols inside falling nodes
     let noteStreams = [
       { x: 40,  y: 0,    w: 40, h: 55, label: 'S' },
       { x: 120, y: -160, w: 40, h: 70, label: 'R' },
@@ -439,16 +482,13 @@
       const speed = parseInt(speedSlider.value, 10);
       
       noteStreams.forEach(note => {
-        // Draw the colored block
         ctx.fillStyle = '#00adb5';
         ctx.fillRect(note.x, note.y, note.w, note.h);
         
-        // Draw the block text label
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 14px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        // Position letter perfectly inside the center coordinates of the moving block
         ctx.fillText(note.label, note.x + (note.w / 2), note.y + (note.h / 2));
         
         note.y += speed;
