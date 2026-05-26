@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Piano Learning Dashboard</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #121214;
+      color: #e1e1e6;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Header & Input styling */
+    header {
+      background-color: #1a1a1e;
+      padding: 15px 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #29292e;
+      z-index: 10;
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: bold;
+      color: #00adb5;
+    }
+
+    .search-bar {
+      display: flex;
+      gap: 10px;
+      width: 50%;
+      max-width: 600px;
+    }
+
+    .search-bar input {
+      flex: 1;
+      background-color: #202024;
+      border: 1px solid #29292e;
+      padding: 10px 15px;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .search-bar input:focus {
+      border-color: #00adb5;
+    }
+
+    .search-bar button {
+      background-color: #00adb5;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+
+    .search-bar button:hover {
+      background-color: #008c95;
+    }
+
+    .status-tag {
+      font-size: 14px;
+      color: #7c7c8a;
+    }
+
+    /* Main Workspace Grid */
+    .workspace {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 450px 1fr;
+      gap: 20px;
+      padding: 20px;
+      height: calc(100vh - 180px);
+      overflow: hidden;
+    }
+
+    /* Left panel: Video & Sidebar info */
+    .left-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .video-card {
+      background: #1a1a1e;
+      border-radius: 8px;
+      overflow: hidden;
+      aspect-ratio: 16/9;
+      border: 1px solid #29292e;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #7c7c8a;
+      text-align: center;
+      padding: 10px;
+    }
+
+    .notes-feed {
+      flex: 1;
+      background: #1a1a1e;
+      border-radius: 8px;
+      border: 1px solid #29292e;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .notes-feed h3 {
+      font-size: 16px;
+      margin-bottom: 10px;
+      color: #00adb5;
+    }
+
+    .notes-list {
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .note-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: #202024;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .note-timestamp {
+      color: #00adb5;
+      font-family: monospace;
+    }
+
+    /* Right panel: Visualizer Waterfall */
+    .visualizer-panel {
+      background: #1a1a1e;
+      border-radius: 8px;
+      border: 1px solid #29292e;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .visualizer-header {
+      padding: 10px 15px;
+      border-bottom: 1px solid #29292e;
+      font-size: 14px;
+      color: #7c7c8a;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .controls-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .controls-group label {
+      font-size: 12px;
+    }
+
+    #visualizerCanvas {
+      flex: 1;
+      width: 100%;
+      background: linear-gradient(to bottom, #141416, #1a1a1e);
+    }
+
+    /* Bottom Panel: Keyboard Wrapper */
+    .keyboard-container {
+      height: 120px;
+      background: #09090a;
+      display: flex;
+      justify-content: center;
+      padding-top: 5px;
+      border-top: 2px solid #29292e;
+      position: relative;
+    }
+
+    .piano {
+      display: flex;
+      position: relative;
+    }
+
+    .white-key {
+      width: 40px;
+      height: 105px;
+      background: #f8f8f8;
+      border: 1px solid #ccc;
+      border-radius: 0 0 4px 4px;
+      cursor: pointer;
+      z-index: 1;
+      transition: background 0.1s;
+    }
+
+    .white-key:active, .white-key.active {
+      background: #dbdbdb;
+      height: 103px;
+    }
+
+    .black-key {
+      width: 26px;
+      height: 65px;
+      background: #121214;
+      border: 1px solid #000;
+      border-radius: 0 0 3px 3px;
+      position: absolute;
+      z-index: 2;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+
+    .black-key:active, .black-key.active {
+      background: #3e3e44;
+    }
+
+    /* Precise alignment of black keys relative to white keys */
+    .bk-1 { left: 27px; }
+    .bk-2 { left: 67px; }
+    .bk-3 { left: 147px; }
+    .bk-4 { left: 187px; }
+    .bk-5 { left: 227px; }
+    .bk-6 { left: 307px; }
+    .bk-7 { left: 347px; }
+
+    /* 📱 MOBILE RESPONSIVENESS MEDIA QUERY */
+    @media (max-width: 768px) {
+      body {
+        overflow-y: auto;
+        height: auto;
+      }
+
+      header {
+        flex-direction: column;
+        gap: 12px;
+        padding: 15px;
+        text-align: center;
+      }
+
+      .search-bar {
+        width: 100%;
+      }
+
+      .workspace {
+        grid-template-columns: 1fr;
+        height: auto;
+        overflow: visible;
+        padding: 10px;
+        gap: 15px;
+      }
+
+      .left-panel {
+        gap: 15px;
+      }
+
+      .visualizer-panel {
+        height: 300px;
+      }
+
+      .keyboard-container {
+        position: sticky;
+        bottom: 0;
+        z-index: 100;
+        justify-content: flex-start;
+        overflow-x: auto;
+        padding-left: 10px;
+        padding-right: 10px;
+        height: 130px;
+        box-shadow: 0 -4px 10px rgba(0,0,0,0.5);
+      }
+      
+      .piano {
+        padding-right: 20px; /* Prevents final keys sticking to edges on scroll */
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">🎹 PianoLabs AI</div>
+    <div class="search-bar">
+      <input type="text" id="youtubeUrl" placeholder="Paste YouTube Video URL here..." value="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
+      <button onclick="loadSong()">Load Song</button>
+    </div>
+    <div class="status-tag" id="midiStatus">MIDI: Mobile Touch Active 📱</div>
+  </header>
+
+  <div class="workspace">
+    
+    <div class="left-panel">
+      <div class="video-card" id="videoContainer">
+        <p>Paste a YouTube link above and click "Load Song" to launch the video tutorial stream.</p>
+      </div>
+      
+      <div class="notes-feed">
+        <h3>Detected Chords / Notes</h3>
+        <div class="notes-list" id="notesList">
+          <div class="note-row">
+            <span>Intro Guide Loop</span>
+            <span class="note-timestamp">00:00</span>
+          </div>
+          <div class="note-row">
+            <strong>C Maj → Am → F Maj → G Maj</strong>
+            <span class="note-timestamp">00:04</span>
+          </div>
+          <div class="note-row">
+            <span>Verse Progression</span>
+            <span class="note-timestamp">00:12</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="visualizer-panel">
+      <div class="visualizer-header">
+        <span>Falling Notes Stream</span>
+        <div class="controls-group">
+          <label for="speedSlider">Speed:</label>
+          <input type="range" id="speedSlider" min="1" max="10" value="3">
+        </div>
+      </div>
+      <canvas id="visualizerCanvas"></canvas>
+    </div>
+
+  </div>
+
+  <div class="keyboard-container">
+    <div class="piano">
+      <div class="white-key" data-note="C4" onclick="playKey('C4')"></div>
+      <div class="black-key bk-1" data-note="C#4" onclick="playKey('C#4')"></div>
+      <div class="white-key" data-note="D4" onclick="playKey('D4')"></div>
+      <div class="black-key bk-2" data-note="D#4" onclick="playKey('D#4')"></div>
+      <div class="white-key" data-note="E4" onclick="playKey('E4')"></div>
+      
+      <div class="white-key" data-note="F4" onclick="playKey('F4')"></div>
+      <div class="black-key bk-3" data-note="F#4" onclick="playKey('F#4')"></div>
+      <div class="white-key" data-note="G4" onclick="playKey('G4')"></div>
+      <div class="black-key bk-4" data-note="G#4" onclick="playKey('G#4')"></div>
+      <div class="white-key" data-note="A4" onclick="playKey('A4')"></div>
+      <div class="black-key bk-5" data-note="A#4" onclick="playKey('A#4')"></div>
+      <div class="white-key" data-note="B4" onclick="playKey('B4')"></div>
+
+      <div class="white-key" data-note="C5" onclick="playKey('C5')"></div>
+      <div class="black-key bk-6" data-note="C#5" onclick="playKey('C#5')"></div>
+      <div class="white-key" data-note="D5" onclick="playKey('D5')"></div>
+      <div class="black-key bk-7" data-note="D#5" onclick="playKey('D#5')"></div>
+      <div class="white-key" data-note="E5" onclick="playKey('E5')"></div>
+    </div>
+  </div>
+
+  <script>
+    // 1. YouTube Extraction & Embedding System
+    function loadSong() {
+      const urlInput = document.getElementById('youtubeUrl').value;
+      const videoContainer = document.getElementById('videoContainer');
+      
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+      const match = urlInput.match(regExp);
+
+      if (match && match[2].length === 11) {
+        const videoId = match[2];
+        videoContainer.innerHTML = `
+          <iframe width="100%" height="100%" 
+            src="https://www.youtube.com/embed/${videoId}?enablejsapi=1" 
+            frameborder="0" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+            allowfullscreen>
+          </iframe>`;
+      } else {
+        alert("Please enter a valid YouTube link.");
+      }
+    }
+
+    // 2. Interactive Click Visual Indicator
+    function playKey(note) {
+      console.log("Synthesizer Key Triggered: " + note);
+      
+      // Select the HTML element matching note to toggle visual flash feedback
+      const targetKey = document.querySelector(`[data-note="${note}"]`);
+      if(targetKey) {
+        targetKey.classList.add('active');
+        setTimeout(() => targetKey.classList.remove('active'), 150);
+      }
+    }
+
+    // 3. Falling Canvas Animation Loop Engine 
+    const canvas = document.getElementById('visualizerCanvas');
+    const ctx = canvas.getContext('2d');
+    const speedSlider = document.getElementById('speedSlider');
+    
+    function resizeCanvas() {
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = canvas.parentElement.clientHeight - 45; 
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Track simulated positions of falling block notes
+    let noteStreams = [
+      { x: 40,  y: 0,    w: 38, h: 50 },
+      { x: 120, y: -160, w: 38, h: 70 },
+      { x: 240, y: -80,  w: 38, h: 40 }
+    ];
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Dynamically fetch current slider speed value
+      const speed = parseInt(speedSlider.value, 10);
+
+      ctx.fillStyle = '#00adb5';
+      
+      noteStreams.forEach(note => {
+        ctx.fillRect(note.x, note.y, note.w, note.h);
+        
+        // Advance note downward
+        note.y += speed;
+        
+        // Reset element position to cycle indefinitely once past screen lower-bound
+        if (note.y > canvas.height) {
+          note.y = -60;
+        }
+      });
+
+      requestAnimationFrame(animate);
+    }
+    
+    // Fire engine loop initializer
+    animate();
+  </script>
+</body>
+</html>
