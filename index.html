@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Piano Learning Dashboard</title>
+  <title>Make it Karnatic</title>
   <style>
     * {
       box-sizing: border-box;
@@ -21,7 +21,7 @@
       overflow: hidden;
     }
 
-    /* Header & Input styling */
+    /* Header styling */
     header {
       background-color: #1a1a1e;
       padding: 15px 30px;
@@ -41,7 +41,7 @@
     .search-bar {
       display: flex;
       gap: 10px;
-      width: 50%;
+      width: 45%;
       max-width: 600px;
     }
 
@@ -68,6 +68,7 @@
       border-radius: 6px;
       cursor: pointer;
       font-weight: 600;
+      font-size: 14px;
       transition: background 0.2s;
     }
 
@@ -80,7 +81,7 @@
       color: #7c7c8a;
     }
 
-    /* Main Workspace Grid */
+    /* Main Grid Layout */
     .workspace {
       flex: 1;
       display: grid;
@@ -91,7 +92,6 @@
       overflow: hidden;
     }
 
-    /* Left panel: Video & Sidebar info */
     .left-panel {
       display: flex;
       flex-direction: column;
@@ -109,9 +109,11 @@
       align-items: center;
       color: #7c7c8a;
       text-align: center;
-      padding: 10px;
+      padding: 20px;
+      font-size: 14px;
     }
 
+    /* Notes Feed: Exclusively contains the Malayalam Notation script */
     .notes-feed {
       flex: 1;
       background: #1a1a1e;
@@ -125,7 +127,7 @@
 
     .notes-feed h3 {
       font-size: 16px;
-      margin-bottom: 10px;
+      margin-bottom: 15px;
       color: #00adb5;
     }
 
@@ -134,21 +136,33 @@
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
     }
 
     .note-row {
       display: flex;
       justify-content: space-between;
-      padding: 8px 12px;
+      align-items: center;
+      padding: 12px 15px;
       background: #202024;
-      border-radius: 4px;
-      font-size: 14px;
+      border-radius: 6px;
+      border-left: 4px solid #00adb5;
+    }
+
+    .carnatic-notation {
+      font-size: 18px;
+      font-weight: 500;
+      color: #ffffff;
+      letter-spacing: 1px;
     }
 
     .note-timestamp {
       color: #00adb5;
       font-family: monospace;
+      font-size: 14px;
+      background: rgba(0, 173, 181, 0.1);
+      padding: 2px 8px;
+      border-radius: 4px;
     }
 
     /* Right panel: Visualizer Waterfall */
@@ -166,7 +180,7 @@
       padding: 10px 15px;
       border-bottom: 1px solid #29292e;
       font-size: 14px;
-      color: #7c7c8a;
+      color: #e1e1e6;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -178,17 +192,13 @@
       gap: 10px;
     }
 
-    .controls-group label {
-      font-size: 12px;
-    }
-
     #visualizerCanvas {
       flex: 1;
       width: 100%;
       background: linear-gradient(to bottom, #141416, #1a1a1e);
     }
 
-    /* Bottom Panel: Keyboard Wrapper */
+    /* Bottom Piano Setup */
     .keyboard-container {
       height: 120px;
       background: #09090a;
@@ -212,7 +222,6 @@
       border-radius: 0 0 4px 4px;
       cursor: pointer;
       z-index: 1;
-      transition: background 0.1s;
     }
 
     .white-key:active, .white-key.active {
@@ -229,14 +238,13 @@
       position: absolute;
       z-index: 2;
       cursor: pointer;
-      transition: background 0.1s;
     }
 
     .black-key:active, .black-key.active {
       background: #3e3e44;
     }
 
-    /* Precise alignment of black keys relative to white keys */
+    /* Key alignments */
     .bk-1 { left: 27px; }
     .bk-2 { left: 67px; }
     .bk-3 { left: 147px; }
@@ -245,7 +253,7 @@
     .bk-6 { left: 307px; }
     .bk-7 { left: 347px; }
 
-    /* 📱 MOBILE RESPONSIVENESS MEDIA QUERY */
+    /* Mobile Responsive Layout overrides */
     @media (max-width: 768px) {
       body {
         overflow-y: auto;
@@ -271,10 +279,6 @@
         gap: 15px;
       }
 
-      .left-panel {
-        gap: 15px;
-      }
-
       .visualizer-panel {
         height: 300px;
       }
@@ -292,7 +296,7 @@
       }
       
       .piano {
-        padding-right: 20px; /* Prevents final keys sticking to edges on scroll */
+        padding-right: 20px;
       }
     }
   </style>
@@ -300,11 +304,13 @@
 <body>
 
   <header>
-    <div class="logo">🎹 PianoLabs AI</div>
+    <div class="logo">🎹 Make it Karnatic</div>
+    
     <div class="search-bar">
-      <input type="text" id="youtubeUrl" placeholder="Paste YouTube Video URL here..." value="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
+      <input type="text" id="youtubeUrl" placeholder="Paste YouTube Link here..." value="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
       <button onclick="loadSong()">Load Song</button>
     </div>
+    
     <div class="status-tag" id="midiStatus">MIDI: Mobile Touch Active 📱</div>
   </header>
 
@@ -316,20 +322,24 @@
       </div>
       
       <div class="notes-feed">
-        <h3>Detected Chords / Notes</h3>
+        <h3>Detected Swaras / Notes</h3>
         <div class="notes-list" id="notesList">
+          
           <div class="note-row">
-            <span>Intro Guide Loop</span>
-            <span class="note-timestamp">00:00</span>
+            <div class="carnatic-notation">സ &nbsp; രി &nbsp; ഗ &nbsp; മ &nbsp; | &nbsp; പ &nbsp; ധ &nbsp; നി &nbsp; സമു</div>
+            <span class="note-timestamp">00:02</span>
           </div>
+          
           <div class="note-row">
-            <strong>C Maj → Am → F Maj → G Maj</strong>
-            <span class="note-timestamp">00:04</span>
+            <div class="carnatic-notation">മാാാ &nbsp; മാാാ &nbsp; | &nbsp; പ &nbsp; ധ &nbsp; നി &nbsp; സത</div>
+            <span class="note-timestamp">00:06</span>
           </div>
+
           <div class="note-row">
-            <span>Verse Progression</span>
-            <span class="note-timestamp">00:12</span>
+            <div class="carnatic-notation">രിിി &nbsp; ഗ &nbsp; മ &nbsp; | &nbsp; പപ &nbsp; ധധ &nbsp; നി</div>
+            <span class="note-timestamp">00:11</span>
           </div>
+          
         </div>
       </div>
     </div>
@@ -372,7 +382,7 @@
   </div>
 
   <script>
-    // 1. YouTube Extraction & Embedding System
+    // 1. YouTube Video Embedding system
     function loadSong() {
       const urlInput = document.getElementById('youtubeUrl').value;
       const videoContainer = document.getElementById('videoContainer');
@@ -394,11 +404,9 @@
       }
     }
 
-    // 2. Interactive Click Visual Indicator
+    // 2. Interactive Key visual response triggers
     function playKey(note) {
-      console.log("Synthesizer Key Triggered: " + note);
-      
-      // Select the HTML element matching note to toggle visual flash feedback
+      console.log("Key Triggered: " + note);
       const targetKey = document.querySelector(`[data-note="${note}"]`);
       if(targetKey) {
         targetKey.classList.add('active');
@@ -406,7 +414,7 @@
       }
     }
 
-    // 3. Falling Canvas Animation Loop Engine 
+    // 3. Falling Canvas Loop Engine with note letters drawn inside
     const canvas = document.getElementById('visualizerCanvas');
     const ctx = canvas.getContext('2d');
     const speedSlider = document.getElementById('speedSlider');
@@ -418,37 +426,40 @@
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    // Track simulated positions of falling block notes
+    // Added explicit 'label' fields to display notation symbols inside falling nodes
     let noteStreams = [
-      { x: 40,  y: 0,    w: 38, h: 50 },
-      { x: 120, y: -160, w: 38, h: 70 },
-      { x: 240, y: -80,  w: 38, h: 40 }
+      { x: 40,  y: 0,    w: 40, h: 55, label: 'S' },
+      { x: 120, y: -160, w: 40, h: 70, label: 'R' },
+      { x: 200, y: -80,  w: 40, h: 55, label: 'G' },
+      { x: 280, y: -260, w: 40, h: 80, label: 'M' }
     ];
 
     function animate() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      // Dynamically fetch current slider speed value
       const speed = parseInt(speedSlider.value, 10);
-
-      ctx.fillStyle = '#00adb5';
       
       noteStreams.forEach(note => {
+        // Draw the colored block
+        ctx.fillStyle = '#00adb5';
         ctx.fillRect(note.x, note.y, note.w, note.h);
         
-        // Advance note downward
-        note.y += speed;
+        // Draw the block text label
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        // Position letter perfectly inside the center coordinates of the moving block
+        ctx.fillText(note.label, note.x + (note.w / 2), note.y + (note.h / 2));
         
-        // Reset element position to cycle indefinitely once past screen lower-bound
+        note.y += speed;
         if (note.y > canvas.height) {
-          note.y = -60;
+          note.y = -90;
         }
       });
 
       requestAnimationFrame(animate);
     }
     
-    // Fire engine loop initializer
     animate();
   </script>
 </body>
